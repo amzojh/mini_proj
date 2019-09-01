@@ -6,7 +6,7 @@ from requests import ConnectTimeout, ReadTimeout
 # get, post request를 위한 함수가 정의되어있음.
 
 
-class webUtil():
+class requestsUtil():
 
     def __init__(self, logger_class):
         self.logger_util = logger_class

@@ -4,9 +4,9 @@ import datetime
 
 
 class defaultLogger():
-    def __init__(self, name="crawler"):
+    def __init__(self, name="crawler", file_path=None):
         self.logger = logging.getLogger(name)
-        self._set_default_log_conf()
+        self._set_default_log_conf(file_path)
 
     def get_logger(self):
         return self.logger

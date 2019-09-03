@@ -26,5 +26,5 @@ class sqlConnector():
 
     
 
-    def query(self, query_statement):
+    def query_(self, query_statement):
         self.cursor = self.db.cursor()

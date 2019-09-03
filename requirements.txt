@@ -3,3 +3,6 @@ numpy
 requests
 selenium
 pymysql
+beautifulsoup4
+lxml
+html5lib

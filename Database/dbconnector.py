@@ -17,9 +17,14 @@ class sqlConnector():
             DATABASE_PORT : {DATABASE_PORT}
             DATABASE_USERNAME : {DATABASE_USERNAME}
             """)
-        db = pymysql.connect(host=DATABASE_ENDPOINT, 
-                            port=DATABASE_PORT, 
+        self.db = pymysql.connect(host=DATABASE_ENDPOINT, 
+                            port=int(DATABASE_PORT), 
                             user=DATABASE_USERNAME, 
                             passwd=DATABASE_PASSWORD, 
                             db=DATABASE_DBNAME, 
                             charset="utf8")
+
+    
+
+    def query(self, query_statement):
+        self.cursor = self.db.cursor()

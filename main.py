@@ -7,8 +7,9 @@ from Crawling.companylist import companyListCrwaler
 
 if __name__ == "__main__":
     sql_connector = sqlConnector()
+    sql_connector.insert_query_from_df()
     logger_class = defaultLogger()
-    company_list_crwaler = companyListCrwaler(logger_class)    
-    company_list_crwaler.process()
+    # company_list_crwaler = companyListCrwaler(logger_class)    
+    # company_list_crwaler.process()
 
     print(sql_connector)

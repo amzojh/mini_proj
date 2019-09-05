@@ -1,5 +1,6 @@
 import pymysql
 import os
+import pandas as pd
 
 DATABASE_ENDPOINT = os.environ.get("DATABASE_ENDPOINT")
 DATABASE_PASSWORD = os.environ.get("DATABASE_PASSWORD")
@@ -26,5 +27,16 @@ class sqlConnector():
 
     
 
-    def query_(self, query_statement):
+    def insert_query_from_df(self):
+        df = pd.read_csv("companyList.csv")
+        df["CompanyCode"] = df["CompanyCode"].astype(str).str.zfill(6)
+        print(str(tuple(df.columns)))
+        print(str(tuple(df.values.tolist())).replace('[', '').replace(']', ''))
+        
+        query_statement = """
+            insert into 
+        """
+        
+        
         self.cursor = self.db.cursor()
+

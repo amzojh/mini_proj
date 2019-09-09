@@ -1,10 +1,17 @@
 from Crawling.base import baseCrwaler
 from bs4 import BeautifulSoup as bs
 import pandas as pd
+import 1 as fdr
+
+
 
 class companyListCrwaler(baseCrwaler):
     def __init__(self, logger_class):
         super().__init__(logger_class)
+
+
+    def get_listing_company(self, market):
+        return fdr.StockListing(market)
 
     def process(self):
         page_index = 1
@@ -39,6 +46,4 @@ class companyListCrwaler(baseCrwaler):
         df_2 = pd.read_html(io=url, index_col=0)[0]["종목코드"].astype(str).str.strip()
         df_2.name = "CompanyCode"
         df_1 = pd.concat([df_1, df_2], join='inner', axis=1)
-        print(df_1.columns)
-        print(df_1.values.tolist())
         df_1.to_csv("companyList.csv")

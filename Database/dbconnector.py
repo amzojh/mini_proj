@@ -24,19 +24,3 @@ class sqlConnector():
                             passwd=DATABASE_PASSWORD, 
                             db=DATABASE_DBNAME, 
                             charset="utf8")
-
-    
-
-    def insert_query_from_df(self):
-        df = pd.read_csv("companyList.csv")
-        df["CompanyCode"] = df["CompanyCode"].astype(str).str.zfill(6)
-        print(str(tuple(df.columns)))
-        print(str(tuple(df.values.tolist())).replace('[', '').replace(']', ''))
-        
-        query_statement = """
-            insert into 
-        """
-        
-        
-        self.cursor = self.db.cursor()
-

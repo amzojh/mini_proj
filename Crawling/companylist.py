@@ -1,7 +1,7 @@
 from Crawling.base import baseCrwaler
 from bs4 import BeautifulSoup as bs
 import pandas as pd
-import 1 as fdr
+import FinanceDataReader as fdr
 
 
 

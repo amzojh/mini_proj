@@ -48,5 +48,5 @@ class dartCrawler(baseCrwaler):
                 """.replace("\n", "")
             res = self.webutil.no_exception_get(base_url ,isReturnSession=True)
             bs_obj = bs(res.text, 'lxml')
-            
+            bs_obj.select_one("div[class='page_list']>p")
         # company_df["Symbol"].apply(lambda x: )

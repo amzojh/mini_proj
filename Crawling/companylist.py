@@ -1,17 +1,42 @@
+import os
+
 from Crawling.base import baseCrwaler
 from bs4 import BeautifulSoup as bs
 import pandas as pd
 import FinanceDataReader as fdr
 
 
-
 class companyListCrwaler(baseCrwaler):
-    def __init__(self, logger_class):
-        super().__init__(logger_class)
+    def __init__(self, logger_class, base_path=None):
+        super().__init__(logger_class, base_path)
+        self.listing_company_path = os.path.join(self.base_path, "/listing/KRX_listing.csv")
 
 
-    def get_listing_company(self, market):
+    def _fdr_get_listing_company(self, market):
         return fdr.StockListing(market)
+
+    def get_listing_company(self):
+        market_list = ["KOSPI", "KOSDAQ", "KONEX", "NASDAQ", "NYSE", "AMEX", "SP500"]
+        df_list = []
+        for market in market_list:
+            df = self._fdr_get_listing_company(market)
+            df["Market"] = market
+            df = df.apply(lambda x: x.astype(str), axis=1)
+            
+            if market in ["KOSPI", "KOSDAQ", "KONEX"]:
+                df["Symbol"] = df["Symbol"].str.zfill(6)
+            
+            df_list.append(df)
+
+        df = pd.concat(df_list)
+
+        if not os.path.exists("/listing"):
+            os.makedirs("/listing")
+
+        print(df.head(10))
+        df.to_csv("/listing/KRX_listing.csv")
+
+        return df
 
     def process(self):
         page_index = 1

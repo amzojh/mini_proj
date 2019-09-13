@@ -16,7 +16,10 @@ class companyListCrwaler(baseCrwaler):
         return fdr.StockListing(market)
 
     def get_listing_company(self):
-        market_list = ["KOSPI", "KOSDAQ", "KONEX", "NASDAQ", "NYSE", "AMEX", "SP500"]
+
+        # market_list = ["KOSPI", "KOSDAQ", "KONEX", "NASDAQ", "NYSE", "AMEX", "SP500"]
+        market_list = ["KOSPI", "KOSDAQ", "KONEX"]
+
         df_list = []
         for market in market_list:
             df = self._fdr_get_listing_company(market)

@@ -1,6 +1,7 @@
 import os
 import datetime
 import re
+import asyncio
 
 import numpy as np
 from Crawling.base import baseCrwaler
@@ -40,10 +41,31 @@ class dartCrawler(baseCrwaler):
 
         return df
 
-    def _header_setting(self):
-        pass
+    def _setting_header(self):
+        headers = {}
+        headers["User-Agent"] = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Mobile Safari/537.36"
+        headers["Origin"] = "http://dart.fss.or.kr"
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+        headers["Host"] = "dart.fss.or.kr"
 
-    def _df_string_parsing(self, df):
+        return headers
+    
+    def _setting_query_params(self, symbol, doc_code, start_date, end_date):
+        data = {}
+        data["currentPage"] = "1"
+        data["maxResults"] = "100"
+        data["maxLinks"] = "10"
+        data["sort"] = "date"
+        data["series"] = "desc"
+        data["textCrpNm"] = str(symbol)
+        data["startDate"] = start_date
+        data["endDate"] = end_date
+        data["publicType"] = str(doc_code)
+
+        return data
+
+
+    def _parsing_df_string(self, df):
         values = df.values.astype(str)
         values = np.char.strip(values)
         values = np.char.replace(values, "\t", "")
@@ -54,7 +76,8 @@ class dartCrawler(baseCrwaler):
         return df
 
 
-    def _parsing_search_table(self, bs_obj, doc_type):
+
+    def _parsing_search_table(self, bs_obj, doc_type, symbol):
         tr_obj_list = bs_obj.select("div.table_list>table[summary]>tbody>tr")
         report_list = []
         for tr_obj in tr_obj_list:
@@ -65,11 +88,10 @@ class dartCrawler(baseCrwaler):
             issue_company_info_tag = td_list[3].select_one('div')
             date_info_tag = td_list[4]
 
-            report_dict["TargetDisclosureCompany"] = str.strip(disclosure_company_info_tag.text)
             href = str(report_info_tag.attrs["href"])
             rcp_pattern = re.compile(r"rcpNo=(\d+)")
             rcp_id = re.search(rcp_pattern, href).group(1)
-            
+            report_dict["TargetDisclosureCompany"] = str.strip(disclosure_company_info_tag.text)
             report_dict["ReportLink"] = f"http://dart.fss.or.kr{href}"
             report_dict["ReportName"] = str.strip(report_info_tag.text)
 
@@ -77,6 +99,7 @@ class dartCrawler(baseCrwaler):
             report_dict["IssueDate"] = str(date_info_tag.text)
             report_dict["DocType"] = doc_type
             report_dict["rcpNo"] = rcp_id
+            report_dict["Symbol"] = symbol
             report_list.append(report_dict)
 
         return report_list
@@ -87,9 +110,8 @@ class dartCrawler(baseCrwaler):
         if end_date is None:
             today = datetime.datetime.today()
             end_date = f"{str(today.year)}{str(today.month).zfill(2)}{str(today.day).zfill(2)}"
-        
         symbol_list = company_df["Symbol"].tolist()
-        report_type_df = pd.read_csv(self.report_type_path)
+        report_type_df = pd.read_csv(self.report_type_path, index_col=0)
         DocCode_list = report_type_df["DocCode"].tolist()
 
         for symbol in symbol_list:
@@ -103,22 +125,9 @@ class dartCrawler(baseCrwaler):
             for doc_code in DocCode_list:
                 session.headers["User-Agent"] = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Mobile Safari/537.36"
                 cookies = session.cookies
-                headers = {}
-                headers["User-Agent"] = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Mobile Safari/537.36"
-                headers["Origin"] = "http://dart.fss.or.kr"
-                headers["Content-Type"] = "application/x-www-form-urlencoded"
-                headers["Host"] = "dart.fss.or.kr"
+                headers = self._setting_header()
 
-                data = {}
-                data["currentPage"] = "1"
-                data["maxResults"] = "100"
-                data["maxLinks"] = "10"
-                data["sort"] = "date"
-                data["series"] = "desc"
-                data["textCrpNm"] = str(symbol)
-                data["startDate"] = start_date
-                data["endDate"] = end_date
-                data["publicType"] = str(doc_code)
+                data = self._setting_query_params(symbol, doc_code, start_date, end_date)
 
                 session, res = self.webutil.no_exception_post(base_url, session=session,cookies=cookies, isReturnSession=True, headers=headers, data=data)
                 bs_obj = bs(res.text, 'lxml')
@@ -131,9 +140,9 @@ class dartCrawler(baseCrwaler):
                 regex = re.compile(r"\[(\d+)/(\d+)\]")
                 find_text = regex.search(text)
                 for_loop_count = int(find_text.group(2))
-                
                 info_list = self._parsing_search_table(bs_obj, doc_code)
-                for i in range(1, for_loop_count + 1):
+                company_report_list = company_report_list + info_list 
+                for i in range(2, for_loop_count + 1):
                     cookies = session.cookies
                     data["currentPage"] = str(i)
                     session, res = self.webutil.no_exception_post(base_url, session=session,cookies=cookies, isReturnSession=True, headers=headers, data=data)
@@ -141,21 +150,92 @@ class dartCrawler(baseCrwaler):
                     info_list = self._parsing_search_table(bs_obj, doc_code)
                     company_report_list = company_report_list + info_list
 
+
+            df = None
+            if os.path.exists(self.report_list_path):
+                df = pd.read_csv(self.report_list_path, index_col=0)
+
             df_company_report = pd.DataFrame(company_report_list)
-            df_company_report = self._df_string_parsing(df_company_report)
-            df_company_report["Symbol"] = symbol
+            df_company_report = self._parsing_df_string(df_company_report)
             df_company_report.set_index(df_company_report["rcpNo"])
+            df = pd.concat([df, df_company_report])
+            df.drop_duplicates(["rcpNo"], inplace=True)
+            df.to_csv(self.report_list_path)
 
-            if not os.path.exists(self.report_list_path):
-                df_company_report.to_csv(self.report_list_path)
 
+    async def async_get_all_report_list(self, company_df, asyncio_util, start_date="19990101", end_date=None):
 
-            df = pd.read_csv(self.report_list_path)
+        if end_date is None:
+            today = datetime.datetime.today()
+            end_date = f"{str(today.year)}{str(today.month).zfill(2)}{str(today.day).zfill(2)}"
+        symbol_list = company_df["Symbol"].tolist()
+        report_type_df = pd.read_csv(self.report_type_path, index_col=0)
+        DocCode_list = report_type_df["DocCode"].tolist()
+
+        for symbol in symbol_list:
+            base_url = f"""
+                http://dart.fss.or.kr/dsab001/search.ax
+                """.replace("\n", "").replace(" ", "")
+            session, res = self.webutil.no_exception_get(base_url,isReturnSession=True)
+            cookies = session.cookies
+            asyncio_util.make_client(cookies=cookies)
+            task_list = []
             
-
-        #         headers = {}
-        #         headers["currentPage"] = 1
+            for doc_code in DocCode_list:
+                headers = self._setting_header()
+                data = self._setting_query_params(symbol, doc_code, start_date, end_date)
+                task = asyncio.ensure_future(self.async_get_report_list(asyncio_util, base_url, headers, data, doc_code, symbol)) 
+                task_list.append(task)
                 
-        #         session, res = self.webutil.no_exception_get(base_url ,isReturnSession=True)
-        #         bs_obj = bs(res.text, 'lxml')
-        # # company_df["Symbol"].apply(lambda x: )
+            return_list = await asyncio.gather(*task_list)
+            await self.async_update_at_csv_file(return_list)
+
+    async def async_update_at_csv_file(self, return_list):
+        company_report_list = np.array(return_list)
+
+        df = None
+        if os.path.exists(self.report_list_path):
+            df = pd.read_csv(self.report_list_path, index_col=0)
+
+        df_company_report = pd.DataFrame(company_report_list)
+        df_company_report.dropna(axis=0, inplace=True)
+        df_company_report = self._parsing_df_string(df_company_report)
+        df = pd.concat([df, df_company_report])
+        df.drop_duplicates(["rcpNo"], inplace=True)
+        df.to_csv(self.report_list_path)
+
+
+    async def async_get_report_list(self, asyncio_util, url, headers, data, doc_code, symbol):
+        company_report_list = []
+        res = asyncio_util.async_post_requests(url, asyncio_util.client, headers=headers, data=data)
+        bs_obj = bs(res.decode("utf-8"), 'lxml')
+        count_bs_obj = bs_obj.select_one("div.page_list>p.page_info")
+
+        if count_bs_obj is None:
+            company_report_list = [{
+                "TargetDisclosureCompany" : None,
+                "ReportLink" : None,
+                "ReportName" : None,
+                "IssueCompany" : None,
+                "IssueDate" : None,
+                "DocType" : None,
+                "rcpNo" : None,
+                "Symbol" : None,
+            }]
+            return company_report_list
+
+        text = str.strip(count_bs_obj.text)
+        regex = re.compile(r"\[(\d+)/(\d+)\]")
+        find_text = regex.search(text)
+        for_loop_count = int(find_text.group(2))
+        info_list = self._parsing_search_table(bs_obj, doc_code, symbol)
+        company_report_list = company_report_list + info_list
+
+        for i in range(2, for_loop_count + 1):
+            data["currentPage"] = str(i)
+            res = asyncio_util.async_post_requests(url, asyncio_util.client, headers=headers, data=data)
+            bs_obj = bs(res.decode("utf-8"), 'lxml')
+            info_list = self._parsing_search_table(bs_obj, doc_code, symbol)
+            company_report_list = company_report_list + info_list
+
+        return company_report_list

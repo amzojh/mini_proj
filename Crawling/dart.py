@@ -104,13 +104,24 @@ class dartCrawler(baseCrwaler):
 
         return report_list
 
+    def _get_symbol_list(self, company_df):
+        download_symbol_list = []
+        if os.path.exists(self.report_list_path):
+            download_symbol_list = pd.read_csv(self.report_list_path, index_col=0)
+            download_symbol_list = download_symbol_list["Symbol"].drop_duplicates(keep='first').tolist()
+        
+        objective_symbol_list = company_df["Symbol"].tolist()
+        
+        return list(set(objective_symbol_list) - set(download_symbol_list))
 
     def get_all_report_list(self, company_df, start_date="19990101", end_date=None):
 
         if end_date is None:
             today = datetime.datetime.today()
             end_date = f"{str(today.year)}{str(today.month).zfill(2)}{str(today.day).zfill(2)}"
-        symbol_list = company_df["Symbol"].tolist()
+
+        symbol_list = self._get_symbol_list(company_df)
+
         report_type_df = pd.read_csv(self.report_type_path, index_col=0)
         DocCode_list = report_type_df["DocCode"].tolist()
 
@@ -140,14 +151,14 @@ class dartCrawler(baseCrwaler):
                 regex = re.compile(r"\[(\d+)/(\d+)\]")
                 find_text = regex.search(text)
                 for_loop_count = int(find_text.group(2))
-                info_list = self._parsing_search_table(bs_obj, doc_code)
+                info_list = self._parsing_search_table(bs_obj, doc_code, symbol)
                 company_report_list = company_report_list + info_list 
                 for i in range(2, for_loop_count + 1):
                     cookies = session.cookies
                     data["currentPage"] = str(i)
                     session, res = self.webutil.no_exception_post(base_url, session=session,cookies=cookies, isReturnSession=True, headers=headers, data=data)
                     bs_obj = bs(res.text, 'lxml')
-                    info_list = self._parsing_search_table(bs_obj, doc_code)
+                    info_list = self._parsing_search_table(bs_obj, doc_code, symbol)
                     company_report_list = company_report_list + info_list
 
 
@@ -189,16 +200,23 @@ class dartCrawler(baseCrwaler):
                 
             return_list = await asyncio.gather(*task_list)
             await self.async_update_at_csv_file(return_list)
+            await asyncio_util.client.close()
 
     async def async_update_at_csv_file(self, return_list):
-        company_report_list = np.array(return_list)
+        data_list = []
+        for result in return_list:
+            result = np.array(result).flatten()
+            data_list.append(result)
 
         df = None
         if os.path.exists(self.report_list_path):
             df = pd.read_csv(self.report_list_path, index_col=0)
 
-        df_company_report = pd.DataFrame(company_report_list)
+        df_company_report = pd.DataFrame(data_list)
         df_company_report.dropna(axis=0, inplace=True)
+        if df_company_report.shape[0] == 0:
+            return
+
         df_company_report = self._parsing_df_string(df_company_report)
         df = pd.concat([df, df_company_report])
         df.drop_duplicates(["rcpNo"], inplace=True)
@@ -207,7 +225,7 @@ class dartCrawler(baseCrwaler):
 
     async def async_get_report_list(self, asyncio_util, url, headers, data, doc_code, symbol):
         company_report_list = []
-        res = asyncio_util.async_post_requests(url, asyncio_util.client, headers=headers, data=data)
+        res = await asyncio_util.async_post_requests(url, asyncio_util.client, headers=headers, data=data)
         bs_obj = bs(res.decode("utf-8"), 'lxml')
         count_bs_obj = bs_obj.select_one("div.page_list>p.page_info")
 
@@ -233,7 +251,7 @@ class dartCrawler(baseCrwaler):
 
         for i in range(2, for_loop_count + 1):
             data["currentPage"] = str(i)
-            res = asyncio_util.async_post_requests(url, asyncio_util.client, headers=headers, data=data)
+            res = await asyncio_util.async_post_requests(url, asyncio_util.client, headers=headers, data=data)
             bs_obj = bs(res.decode("utf-8"), 'lxml')
             info_list = self._parsing_search_table(bs_obj, doc_code, symbol)
             company_report_list = company_report_list + info_list

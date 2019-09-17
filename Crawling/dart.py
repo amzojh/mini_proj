@@ -28,8 +28,8 @@ class dartCrawler(baseCrwaler):
             input_list = dl_tag.select("dd>input[type='checkbox']")
             for input_tag in input_list:
                 input_dict = {}
-                input_dict["DocCode"] = str(input_tag["value"])
-                input_dict["DocDescription"] = str(input_tag["title"])
+                input_dict["document_code"] = str(input_tag["value"])
+                input_dict["document_description"] = str(input_tag["title"])
                 mapping_list.append(input_dict)
                 
         df = pd.DataFrame(mapping_list)
@@ -91,15 +91,15 @@ class dartCrawler(baseCrwaler):
             href = str(report_info_tag.attrs["href"])
             rcp_pattern = re.compile(r"rcpNo=(\d+)")
             rcp_id = re.search(rcp_pattern, href).group(1)
-            report_dict["TargetDisclosureCompany"] = str.strip(disclosure_company_info_tag.text)
-            report_dict["ReportLink"] = f"http://dart.fss.or.kr{href}"
-            report_dict["ReportName"] = str.strip(report_info_tag.text)
+            report_dict["disclosure_company"] = str.strip(disclosure_company_info_tag.text)
+            report_dict["report_link"] = f"http://dart.fss.or.kr{href}"
+            report_dict["report_name"] = str.strip(report_info_tag.text)
 
-            report_dict["IssueCompany"] = str.strip(issue_company_info_tag.text)
-            report_dict["IssueDate"] = str(date_info_tag.text)
-            report_dict["DocType"] = doc_type
-            report_dict["rcpNo"] = rcp_id
-            report_dict["Symbol"] = symbol
+            report_dict["issue_company"] = str.strip(issue_company_info_tag.text)
+            report_dict["issue_date"] = str(date_info_tag.text)
+            report_dict["document_type"] = doc_type
+            report_dict["report_id"] = rcp_id
+            report_dict["symbol"] = symbol
             report_list.append(report_dict)
 
         return report_list
@@ -108,9 +108,9 @@ class dartCrawler(baseCrwaler):
         download_symbol_list = []
         if os.path.exists(self.report_list_path):
             download_symbol_list = pd.read_csv(self.report_list_path, index_col=0)
-            download_symbol_list = download_symbol_list["Symbol"].drop_duplicates(keep='first').tolist()
+            download_symbol_list = download_symbol_list["symbol"].drop_duplicates(keep='first').astype(str).str.zfill(6).tolist()
         
-        objective_symbol_list = company_df["Symbol"].tolist()
+        objective_symbol_list = company_df["symbol"].astype(str).str.zfill(6).tolist()
         
         return list(set(objective_symbol_list) - set(download_symbol_list))
 
@@ -123,7 +123,7 @@ class dartCrawler(baseCrwaler):
         symbol_list = self._get_symbol_list(company_df)
 
         report_type_df = pd.read_csv(self.report_type_path, index_col=0)
-        DocCode_list = report_type_df["DocCode"].tolist()
+        DocCode_list = report_type_df["document_code"].tolist()
 
         for symbol in symbol_list:
             base_url = f"""
@@ -168,9 +168,9 @@ class dartCrawler(baseCrwaler):
 
             df_company_report = pd.DataFrame(company_report_list)
             df_company_report = self._parsing_df_string(df_company_report)
-            df_company_report.set_index(df_company_report["rcpNo"])
+            df_company_report.set_index(df_company_report["report_id"])
             df = pd.concat([df, df_company_report])
-            df.drop_duplicates(["rcpNo"], inplace=True)
+            df.drop_duplicates(["report_id"], inplace=True)
             df.to_csv(self.report_list_path)
 
 
@@ -179,9 +179,9 @@ class dartCrawler(baseCrwaler):
         if end_date is None:
             today = datetime.datetime.today()
             end_date = f"{str(today.year)}{str(today.month).zfill(2)}{str(today.day).zfill(2)}"
-        symbol_list = company_df["Symbol"].tolist()
+        symbol_list = self._get_symbol_list(company_df)
         report_type_df = pd.read_csv(self.report_type_path, index_col=0)
-        DocCode_list = report_type_df["DocCode"].tolist()
+        DocCode_list = report_type_df["document_code"].tolist()
 
         for symbol in symbol_list:
             base_url = f"""
@@ -219,7 +219,7 @@ class dartCrawler(baseCrwaler):
 
         df_company_report = self._parsing_df_string(df_company_report)
         df = pd.concat([df, df_company_report])
-        df.drop_duplicates(["rcpNo"], inplace=True)
+        df.drop_duplicates(["report_id"], inplace=True)
         df.to_csv(self.report_list_path)
 
 
@@ -231,14 +231,14 @@ class dartCrawler(baseCrwaler):
 
         if count_bs_obj is None:
             company_report_list = [{
-                "TargetDisclosureCompany" : None,
-                "ReportLink" : None,
-                "ReportName" : None,
-                "IssueCompany" : None,
-                "IssueDate" : None,
-                "DocType" : None,
-                "rcpNo" : None,
-                "Symbol" : None,
+                "disclosure_company" : None,
+                "report_link" : None,
+                "report_name" : None,
+                "issue_company" : None,
+                "issue_date" : None,
+                "document_type" : None,
+                "report_id" : None,
+                "symbol" : None,
             }]
             return company_report_list
 

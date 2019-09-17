@@ -23,12 +23,14 @@ class companyListCrwaler(baseCrwaler):
         df_list = []
         for market in market_list:
             df = self._fdr_get_listing_company(market)
-            df["Market"] = market
+            df["market"] = market
             df = df.apply(lambda x: x.astype(str), axis=1)
             
             if market in ["KOSPI", "KOSDAQ", "KONEX"]:
-                df["Symbol"] = df["Symbol"].str.zfill(6)
-            
+                df["symbol"] = df["symbol"].str.zfill(6)
+
+
+            df.columns = ["symbol","company_name","sector","industry","market"]
             df_list.append(df)
 
         df = pd.concat(df_list)

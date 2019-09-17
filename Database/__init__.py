@@ -19,3 +19,4 @@ Base = declarative_base()
 
 db_session = scoped_session(Session)
 Base.query = db_session.query_property()
+Base.metadata.create_all(engine)

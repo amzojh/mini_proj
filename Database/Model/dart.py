@@ -1,3 +1,4 @@
+import inspect
 from sqlalchemy import Column, Integer, String, ForeignKey, Float, TIMESTAMP
 
 try:
@@ -12,16 +13,16 @@ class baseAbstract(Base):
         return f"""
             table name : {self.__tablename__} 
         """
-    
-
 
 class dartReportType(baseAbstract):
     __tablename__ = "DartReportType"
-    symbol = Column(String(30), nullable=False)
-    company_name = Column(String(60), nullable=False)
+    id = Column(Integer, primary_key=True)
+    symbol = Column(String(30), unique=True)
+    company_name = Column(String(60))
     sector = Column(String(30))
     industry = Column(String(60))
     market = Column(String(20))
 
-class dartReportList(baseAbstract):
-    __tablename__ = "DartReportList"
+# class dartReportList(baseAbstract):
+#     __tablename__ = "DartReportList"
+

@@ -7,8 +7,10 @@ from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import ClauseElement
 
-from .settings import config
-
+try:
+    from .settings import config
+except:
+    from settings import config
 
 engine = create_engine(config, convert_unicode=True)
 

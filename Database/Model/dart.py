@@ -3,7 +3,7 @@ from abc import ABCMeta
 from sqlalchemy import Column, Integer, String, ForeignKey, Float, TIMESTAMP
 
 try:
-    from . import Base
+    from __init__ import Base
 except:
     from Database import Base
 

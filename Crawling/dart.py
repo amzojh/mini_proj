@@ -9,6 +9,10 @@ from bs4 import BeautifulSoup as bs
 import pandas as pd
 import requests
 
+# 내 모듈
+
+# from Database.Model.dart import dartReportType, dartReportList
+
 class dartCrawler(baseCrwaler):
     def __init__(self, logger_class, base_path=None):
         super().__init__(logger_class, base_path)
@@ -33,11 +37,6 @@ class dartCrawler(baseCrwaler):
                 mapping_list.append(input_dict)
                 
         df = pd.DataFrame(mapping_list)
-
-        if not os.path.exists("/dart"):
-            os.makedirs("/dart")
-
-        df.to_csv(self.report_type_path)
 
         return df
 
@@ -92,7 +91,7 @@ class dartCrawler(baseCrwaler):
             rcp_pattern = re.compile(r"rcpNo=(\d+)")
             rcp_id = re.search(rcp_pattern, href).group(1)
             report_dict["disclosure_company"] = str.strip(disclosure_company_info_tag.text)
-            report_dict["report_link"] = f"http://dart.fss.or.kr{href}"
+            report_dict["report_link"] = f"{href}"
             report_dict["report_name"] = str.strip(report_info_tag.text)
 
             report_dict["issue_company"] = str.strip(issue_company_info_tag.text)
@@ -124,7 +123,7 @@ class dartCrawler(baseCrwaler):
 
         report_type_df = pd.read_csv(self.report_type_path, index_col=0)
         DocCode_list = report_type_df["document_code"].tolist()
-
+    
         for symbol in symbol_list:
             base_url = f"""
                 http://dart.fss.or.kr/dsab001/search.ax
@@ -199,28 +198,24 @@ class dartCrawler(baseCrwaler):
                 task_list.append(task)
                 
             return_list = await asyncio.gather(*task_list)
-            await self.async_update_at_csv_file(return_list)
+            await self.async_update_at_database(return_list)
             await asyncio_util.client.close()
 
-    async def async_update_at_csv_file(self, return_list):
+    async def async_update_at_database(self, return_list):
         data_list = []
         for result in return_list:
             result = np.array(result).flatten()
             data_list.append(result)
 
-        df = None
-        if os.path.exists(self.report_list_path):
-            df = pd.read_csv(self.report_list_path, index_col=0)
-
         df_company_report = pd.DataFrame(data_list)
         df_company_report.dropna(axis=0, inplace=True)
+
         if df_company_report.shape[0] == 0:
             return
 
         df_company_report = self._parsing_df_string(df_company_report)
-        df = pd.concat([df, df_company_report])
-        df.drop_duplicates(["report_id"], inplace=True)
-        df.to_csv(self.report_list_path)
+        df_company_report.drop_duplicates(["report_id"], inplace=True)
+        df_company_report.to_csv(self.report_list_path)
 
 
     async def async_get_report_list(self, asyncio_util, url, headers, data, doc_code, symbol):

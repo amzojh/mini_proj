@@ -75,9 +75,10 @@ def run_migrations_online():
 
     """
     
-    connectable = engine
+    engine = engine_from_config(
+                config.get_section(config.config_ini_section), prefix='sqlalchemy.')
 
-    with connectable.connect() as connection:
+    with engine.connect() as connection:
         context.configure(
             connection=connection, target_metadata=target_metadata
         )
@@ -90,8 +91,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-
-
-print("여기임")
-print(config.get_section(config.config_ini_section))
-print("ㅋㅋ")

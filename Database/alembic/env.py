@@ -1,12 +1,6 @@
 import sys
 import os
 
-print(sys.path)
-
-sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
-print(sys.path)
-
-
 
 from logging.config import fileConfig
 
@@ -18,12 +12,18 @@ from alembic import context
 try:
     from .settings import alembic_url_config
     from .__init__ import engine, Base
+    from .Model.dart import *
+
 except:
     from settings import alembic_url_config
     from __init__ import engine, Base
+    from Model.dart import *
+
+sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
+
 config = context.config
 config.set_main_option('sqlalchemy.url', alembic_url_config)
 
@@ -76,11 +76,14 @@ def run_migrations_online():
     """
     
     engine = engine_from_config(
-                config.get_section(config.config_ini_section), prefix='sqlalchemy.')
+                config.get_section(config.config_ini_section),
+                prefix='sqlalchemy.',
+                )
 
     with engine.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection, 
+            target_metadata=target_metadata
         )
 
         with context.begin_transaction():

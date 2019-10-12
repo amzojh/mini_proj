@@ -8,6 +8,8 @@ except:
     from Database import Base
 
 
+__all__ = ["dartReportType", "dartReportList"]
+
 class baseAbstract(Base):
     __abstract__ = True
 
@@ -41,7 +43,6 @@ class dartReportList(baseAbstract):
     report_name = Column(String(60))
     disclosure_company = Column(String(60))
     report_id = Column(String(13), unique=True)
-
 
 # class dartReportList(baseAbstract):
 #     __tablename__ = "DartReportList"

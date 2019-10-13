@@ -28,14 +28,14 @@ if __name__ == "__main__":
 
     # sql_connector = sqlConnector()
     logger_class = defaultLogger()
-    company_list_crawler = companyListCrwaler(logger_class, working_dir)
-    company_df = company_list_crawler.get_listing_company()
+    # company_list_crawler = companyListCrwaler(logger_class, working_dir)
+    # company_df = company_list_crawler.get_listing_company()
 
     dart_crawler_instance = dartCrawler(logger_class, working_dir)
-    df_dart_report_type = dart_crawler_instance.get_report_type()
+    # df_dart_report_type = dart_crawler_instance.get_report_type()
 
     
 
-    # loop = asyncio.get_event_loop()
-    # async_util_instance = asynciUtil(logger_class, loop)
-    # loop.run_until_complete(dart_crawler_instance.async_get_all_report_list(company_df, async_util_instance))
+    loop = asyncio.get_event_loop()
+    async_util_instance = asynciUtil(logger_class, loop)
+    loop.run_until_complete(dart_crawler_instance.get_all_dart_company_list(async_util_instance))

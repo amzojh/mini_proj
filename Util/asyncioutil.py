@@ -39,7 +39,7 @@ class asynciUtil():
             log_str = self.logger_util.set_web_log_string(url, method='GET', headers=headers, action=action)
             self.logger.info(log_str)
             if response.status != 200:
-                self.logger.error("- {} \n request url : {} error has occured \n contents : {} .".format(self.__class__.__name__, url, result))
+                self.logger.error("- {} \n request url : {} error has occured".format(self.__class__.__name__, url))
             assert response.status == 200
             result = await response.read() 
         return result
@@ -52,7 +52,7 @@ class asynciUtil():
             log_str = self.logger_util.set_web_log_string(url, method='POST', headers=headers, data=data, action=action)
             self.logger.info(log_str)
             if response.status != 200:
-                self.logger.error("- {} \n request url : {} error has occured \n contents : {} .".format(self.__class__.__name__, url, result))
+                self.logger.error("- {} \n request url : {} error has occured".format(self.__class__.__name__, url))
             assert response.status == 200
             result = await response.read() 
         return result

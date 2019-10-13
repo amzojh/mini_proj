@@ -19,6 +19,124 @@ class dartCrawler(baseCrwaler):
         self.report_type_path = os.path.join(self.base_path, "/dart/reportType.csv")
         self.report_list_path = os.path.join(self.base_path, "/dart/reportList.csv")
 
+
+    async def _get_dart_company_list(self, url, headers, asyncio_util):
+        base_url = "http://dart.fss.or.kr"
+        res = await asyncio_util.async_post_requests(url=url, client=asyncio_util.client, headers=headers)
+        bs_obj = bs(res.decode("utf-8"), 'lxml')
+        a_tag_list = bs_obj.select("a[href^='/dsae001/selectPopup.ax?selectKey=']")
+        task_list = []
+        for a_tag in a_tag_list:
+            href = a_tag.attrs["href"]
+            company_url = base_url + href
+            task = asyncio.create_task(self._get_detail_company_data(company_url, headers, asyncio_util))
+            task_list.append(task)
+
+        company_detail_list = await asyncio.gather(*task_list)
+
+
+        return company_detail_list
+
+
+    """
+    result 형태
+
+    회사이름	나가세 엔지니어링 서비스 코리아(주)
+    영문명	NAGASE ENGINEERING SERVICE KOREA CO.,LTD.
+    공시회사명	나가세엔지니어링서비스코리아
+    종목코드	
+    대표자명	김재구  대표자명 변경이력
+    법인구분	기타법인
+    법인등록번호	110111-1458325
+    사업자등록번호	213-86-32965
+    주소	경기도 안양시 동안구 시민대로 161 925 (비산동, 안양무역센터)
+    홈페이지	www.nagase-eng.co.kr
+    IR홈페이지	
+    전화번호	031-389-0881
+    팩스번호	031-389-0884
+    업종명	반도체 제조용 기계 제조업
+    설립일	1997-09-04
+    결산월	03월
+    """
+
+    async def _get_detail_company_data(self, url, headers, asyncio_util):
+        res = await asyncio_util.async_post_requests(url, client = asyncio_util.client, headers=headers)
+        company_dict = {}
+
+        company_id_pattern = re.compile(r"selectKey=(\d+)")
+        company_id = re.search(company_id_pattern, url).group(1)
+
+        bs_obj = bs(res.decode("utf-8"), 'lxml')
+        td_tag_list = bs_obj.select('table>tbody>tr>td')
+
+        company_dict["company_korean_name"] = str.strip(td_tag_list[0].text)
+        company_dict["company_english_name"] = str.strip(td_tag_list[1].text)
+        company_dict["company_name"] = str.strip(td_tag_list[2].text)
+        company_dict["market_ticker"] = str.strip(td_tag_list[3].text)
+        company_dict["CEO"] = str.strip(td_tag_list[4].text)
+        company_dict["company_type"] = str.strip(td_tag_list[5].text)
+        company_dict["company_registration_number"] = str.strip(td_tag_list[6].text)
+        company_dict["business_registration_number"] = str.strip(td_tag_list[7].text)
+        company_dict["address"] = str.strip(td_tag_list[8].text)
+        company_dict["homepage"] = str.strip(td_tag_list[9].text)
+        company_dict["ir_url"] = str.strip(td_tag_list[10].text)
+        company_dict["phone_number"] = str.strip(td_tag_list[11].text)
+        company_dict["fax"] = str.strip(td_tag_list[12].text)
+        company_dict["business_type"] = str.strip(td_tag_list[13].text)
+        company_dict["foundation_date"] = str.strip(td_tag_list[14].text)
+        company_dict["settlement_month"] = str.strip(td_tag_list[15].text)
+        company_dict["company_id"] = str.strip(company_id)
+
+        return company_dict
+        
+    async def get_all_dart_company_list(self, asyncio_util):
+
+        # 기본 url은 http://dart.fss.or.kr/dsae001/search.ax
+        # index는 16개로 이루어짐, 0 - ㄱ , 1 - ㄴ , 2 - ㄷ 등. 한번에 크롤링할 경우 response가 너무 느림.
+        index_start_num = 3
+        index_num = 9
+        base_url = "http://dart.fss.or.kr/dsae001/search.ax"
+        task_list = []
+        for i in range(index_start_num, index_num):
+            search_index = 0
+            if i >= 14:
+                search_index = i + 1
+            else:
+                search_index = i
+            
+            session, res = self.webutil.no_exception_post("http://dart.fss.or.kr/dsae001/main.do", isReturnSession=True)
+            cookies = session.cookies
+            asyncio_util.make_client(cookies=cookies)
+            headers = self._setting_header()
+            query_params = {
+                "typesOfBusiness" : "all",
+                "corporationType" : "all",
+                "searchIndex" : str(search_index)
+            }
+
+            session, res = self.webutil.no_exception_post(base_url, isReturnSession=True, headers=headers, cookies=cookies, data=query_params)
+            bs_obj = bs(res.text, 'lxml')
+            count_text = bs_obj.select_one("div.page_list>p.page_info").text
+            count_pattern = re.compile(r"\[(\d+)/(\d+)\]")
+            count = re.search(count_pattern, count_text).group(2)
+            
+            for j in range(int(count)):
+                query_params["currentPage"] = str(j + 1)
+                query_url = base_url + f"?typesOfBusiness=all&corporationType=all&searchIndex={str(search_index)}&currentPage={str(j+1)}"
+                task = asyncio.create_task(self._get_dart_company_list(query_url, headers, asyncio_util))
+                task_list.append(task)
+
+            result_list = await asyncio.gather(*task_list)
+            data_list = []
+            for result in result_list:
+                result = list(np.array(result).flatten())
+                data_list = data_list + result
+
+            df = pd.DataFrame(data_list)
+            df.to_excel(f"company_info_{search_index}.xlsx")
+
+        await asyncio_util.client.close()
+
     def get_report_type(self):
         url = "http://dart.fss.or.kr/"
         session, res = self.webutil.no_exception_get(url, isReturnSession=True)
@@ -103,7 +221,7 @@ class dartCrawler(baseCrwaler):
 
         return report_list
 
-    def _get_symbol_list(self, company_df):
+    def _get_no_duplicated_symbol_list(self, company_df):
         download_symbol_list = []
         if os.path.exists(self.report_list_path):
             download_symbol_list = pd.read_csv(self.report_list_path, index_col=0)
@@ -119,7 +237,7 @@ class dartCrawler(baseCrwaler):
             today = datetime.datetime.today()
             end_date = f"{str(today.year)}{str(today.month).zfill(2)}{str(today.day).zfill(2)}"
 
-        symbol_list = self._get_symbol_list(company_df)
+        symbol_list = self._get_no_duplicated_symbol_list(company_df)
 
         report_type_df = pd.read_csv(self.report_type_path, index_col=0)
         DocCode_list = report_type_df["document_code"].tolist()
@@ -178,7 +296,7 @@ class dartCrawler(baseCrwaler):
         if end_date is None:
             today = datetime.datetime.today()
             end_date = f"{str(today.year)}{str(today.month).zfill(2)}{str(today.day).zfill(2)}"
-        symbol_list = self._get_symbol_list(company_df)
+        symbol_list = self._get_no_duplicated_symbol_list(company_df)
         report_type_df = pd.read_csv(self.report_type_path, index_col=0)
         DocCode_list = report_type_df["document_code"].tolist()
 
@@ -205,7 +323,7 @@ class dartCrawler(baseCrwaler):
         data_list = []
         for result in return_list:
             result = np.array(result).flatten()
-            data_list.append(result)
+            data_list = data_list + result
 
         df_company_report = pd.DataFrame(data_list)
         df_company_report.dropna(axis=0, inplace=True)

@@ -1,6 +1,7 @@
 import sys
 import os
 
+sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
 
 from logging.config import fileConfig
 
@@ -10,16 +11,13 @@ from sqlalchemy import pool
 from alembic import context
 
 try:
-    from .settings import alembic_url_config
-    from .__init__ import engine, Base
+    from .__init__ import engine, Base, alembic_url_config
     from .Model.dart import *
 
 except:
-    from settings import alembic_url_config
-    from __init__ import engine, Base
+    from __init__ import engine, Base, alembic_url_config
     from Model.dart import *
 
-sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

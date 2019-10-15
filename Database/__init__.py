@@ -8,9 +8,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import ClauseElement
 
 try:
-    from .settings import config
+    from .settings import config, alembic_url_config
 except:
-    from settings import config
+    from settings import config, alembic_url_config
 
 engine = create_engine(config, convert_unicode=True)
 

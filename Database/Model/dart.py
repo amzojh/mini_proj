@@ -8,7 +8,7 @@ except:
     from Database import Base
 
 
-__all__ = ["dartReportType", "dartReportList"]
+__all__ = ["dartReportType", "dartReportList", "dartCompanyList"]
 
 class baseAbstract(Base):
     __abstract__ = True
@@ -37,12 +37,38 @@ class dartReportList(baseAbstract):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     symbol= Column(String(30))
+    issue_company_id = Column(String(8))
     issue_company = Column(String(60))
     issue_date = Column(String(10))
     report_link = Column(String(200))
     report_name = Column(String(60))
     disclosure_company = Column(String(60))
     report_id = Column(String(13), unique=True)
+
+class dartCompanyList(baseAbstract):
+    __tablename__ = "DartCompanyList"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    company_korean_name = Column(String(255))
+    company_english_name = Column(String(255))
+    company_name = Column(String(255))
+    market_ticker = Column(String(6))
+    CEO = Column(String(50))
+    company_type = Column(String(30))
+    company_registration_number = Column(String(20))
+    business_registration_number = Column(String(20))
+    address = Column(String(255))
+    homepage = Column(String(255))
+    ir_url = Column(String(255))
+    phone_number = Column(String(30))
+    fax = Column(String(30))
+    business_type = Column(String(30))
+    foundation_date = Column(String(30))
+    settlement_month = Column(String(30))
+    company_id = Column(String(8), unique=True)
+    
+
+
 
 # class dartReportList(baseAbstract):
 #     __tablename__ = "DartReportList"

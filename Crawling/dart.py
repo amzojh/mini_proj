@@ -93,8 +93,8 @@ class dartCrawler(baseCrwaler):
 
         # 기본 url은 http://dart.fss.or.kr/dsae001/search.ax
         # index는 16개로 이루어짐, 0 - ㄱ , 1 - ㄴ , 2 - ㄷ 등. 한번에 크롤링할 경우 response가 너무 느림.
-        index_start_num = 3
-        index_num = 9
+        index_start_num = 0
+        index_num = 0
         base_url = "http://dart.fss.or.kr/dsae001/search.ax"
         task_list = []
         for i in range(index_start_num, index_num):

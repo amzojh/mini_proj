@@ -14,7 +14,7 @@ class asynciUtil():
         self.logger = logger_class.get_logger()
         self.loop = loop
         self.client = None
-    
+            
     def make_loop(self):
         if self.loop is not None:
             self.loop.close()

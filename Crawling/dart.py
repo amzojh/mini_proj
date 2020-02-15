@@ -9,6 +9,20 @@ from bs4 import BeautifulSoup as bs
 import pandas as pd
 import requests
 
+
+class dartOpenApi(baseCrwaler):
+
+    def __init__(self, logger_class, base_path = None):
+
+        super().__init__(logger_class, base_path)
+
+
+    
+
+
+
+
+
 class dartCrawler(baseCrwaler):
     def __init__(self, logger_class, base_path=None):
         super().__init__(logger_class, base_path)

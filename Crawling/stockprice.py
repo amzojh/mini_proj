@@ -1,7 +1,6 @@
 from Crawling.base import baseCrwaler
 from bs4 import BeautifulSoup as bs
 import pandas as pd
-import 
 
 class stockPrice(baseCrwaler):
     def __init__(self, logger_class, base_path=None):

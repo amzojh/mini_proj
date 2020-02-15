@@ -107,3 +107,4 @@ envs
 DOCKERFILE
 .vscode
 *.env
+*.ini

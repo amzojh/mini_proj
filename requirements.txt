@@ -10,3 +10,6 @@ finance-datareader
 aiohttp
 chardet
 sqlalchemy
+openpyxl
+xlrd
+ipykernel
